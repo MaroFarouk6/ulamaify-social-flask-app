@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy import select, text
 
 from app.extensions import db
@@ -64,9 +66,22 @@ def ensure_hierarchy(attempt, client):
     audit_folder(attempt, platform_folder, created, "platform")
 
 
+def _queue_lock_key(submission, variant):
+    """Build a deterministic PostgreSQL-safe advisory-lock key."""
+    return json.dumps(
+        [
+            submission.campaign_folder_snapshot,
+            submission.target_date.isoformat(),
+            variant.platform,
+        ],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
 def lock_queue(attempt):
     submission, variant = attempt.variant.submission, attempt.variant
-    key = f"{submission.campaign_folder_snapshot}\0{submission.target_date}\0{variant.platform}"
+    key = _queue_lock_key(submission, variant)
     if db.engine.dialect.name == "postgresql":
         # Kept in the current transaction through hierarchy and post-folder creation.
         db.session.execute(

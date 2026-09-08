@@ -1,7 +1,9 @@
 import hashlib
 import io
 import json
+from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 
 from conftest import csrf, login
 from PIL import Image
@@ -9,7 +11,11 @@ from sqlalchemy import select
 
 from app.extensions import db
 from app.models import AuditLog, DriveCommitAttempt, Submission, User
-from app.services.drive_commit_service import process_until_empty, retry_attempt
+from app.services.drive_commit_service import (
+    _queue_lock_key,
+    process_until_empty,
+    retry_attempt,
+)
 from app.services.drive_service import FOLDER_MIME, DriveError, DriveItem
 
 
@@ -98,6 +104,19 @@ def image_file(name, color="blue"):
 
 def mp4_file(name="video.mp4"):
     return io.BytesIO(b"\x00\x00\x00\x18ftypisom\x00\x00\x02\x00isomiso2mp41"), name
+
+
+def test_queue_lock_key_is_postgresql_text_safe():
+    submission = SimpleNamespace(
+        campaign_folder_snapshot="TEST-CAMPAIGN",
+        target_date=date(2026, 9, 8),
+    )
+    variant = SimpleNamespace(platform="facebook")
+
+    key = _queue_lock_key(submission, variant)
+
+    assert "\0" not in key
+    assert json.loads(key) == ["TEST-CAMPAIGN", "2026-09-08", "facebook"]
 
 
 def create_and_submit(client, platforms, media_count=1, caption="Different interests. One place to grow."):
