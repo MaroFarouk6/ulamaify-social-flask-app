@@ -62,6 +62,7 @@ services:
     secrets: [secret_key, database_url]
     labels:
       - "traefik.enable=true"
+      - "traefik.http.routers.social-manager.tls.certresolver=cloudflare"
       - "traefik.docker.network=${TRAEFIK_NETWORK:-proxy}"
       - 'traefik.http.routers.social-manager.rule=Host(`${SOCIAL_HOST:-social.ulamaify.org}`)'
       - "traefik.http.routers.social-manager.entrypoints=${TRAEFIK_HTTPS_ENTRYPOINT:-https}"
