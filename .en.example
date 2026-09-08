@@ -1,0 +1,15 @@
+# Copy to .env. Keep credentials in mounted files, not here.
+SOCIAL_HOST=social.ulamaify.org
+TRAEFIK_NETWORK=proxy
+TRAEFIK_HTTP_ENTRYPOINT=http
+TRAEFIK_HTTPS_ENTRYPOINT=https
+# The app is reachable only through the trusted Traefik network.
+PROXY_HOPS=1
+SESSION_HOURS=12
+MAX_UPLOAD_MB=500
+CAMPAIGN_REGISTRY_SHEET_ID=
+CAMPAIGN_REGISTRY_RANGE="'sheet1'!A:G"
+SOCIAL_ROOT_FOLDER_ID=
+CAMPAIGNS_ROOT_FOLDER_ID=
+# Keep these false until the corresponding n8n publisher branch has been verified.
+ENABLE_DRIVE_FACEBOOK_CAROUSEL=false
