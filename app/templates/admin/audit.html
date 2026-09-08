@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import pagination %}
+{% block content %}
+<div class="page-heading"><h1>Audit log</h1></div>
+<form class="filter" method="get"><label for="action">Action</label><input id="action" name="action" value="{{ action }}" placeholder="e.g. LOGIN_SUCCESS"><button class="button" type="submit">Filter</button><a href="{{ url_for('admin.audit') }}">Clear</a></form>
+<div class="table-wrap panel"><table><thead><tr><th>Time (UTC)</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th><th>IP</th></tr></thead><tbody>
+{% for event in records.items %}<tr><td>{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td><td>{{ event.actor_name or 'System / unauthenticated' }}</td><td>{{ event.action }}</td><td>{{ event.entity_type }} {{ event.entity_id or '' }}</td><td><code>{{ event.details_json|tojson }}</code></td><td>{{ event.ip_address or 'CLI' }}</td></tr>{% else %}<tr><td colspan="6">No matching activity.</td></tr>{% endfor %}
+</tbody></table></div>{{ pagination(records, 'admin.audit', action) }}
+{% endblock %}

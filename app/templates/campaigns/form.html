@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import field %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">CAMPAIGN REGISTRY</p><h1>Add campaign</h1></div><a class="button secondary" href="{{ url_for('campaigns.manage_campaigns') }}">Cancel</a></div>
+<div class="panel narrow">
+  <p>This appends one validated row to the configured Campaign Registry Sheet. It does not create or delete a Google Drive folder.</p>
+  <form method="post">
+    {{ form.hidden_tag() }}
+    {{ field(form.campaign_id) }}
+    {{ field(form.campaign_name) }}
+    {{ field(form.folder_name) }}
+    {{ field(form.campaign_type) }}
+    {{ field(form.status) }}
+    <div class="form-grid two">{{ field(form.start_date) }}{{ field(form.end_date) }}</div>
+    {{ form.submit(class_='button') }}
+  </form>
+</div>
+{% endblock %}

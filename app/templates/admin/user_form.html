@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import field %}
+{% block content %}
+<section class="panel narrow"><h1>{{ title }}</h1><form method="post">{{ form.hidden_tag() }}
+{% if form.name is defined %}{{ field(form.name, 'name') }}{{ field(form.email, 'email') }}{{ field(form.role) }}{% endif %}
+{{ field(form.password, 'new-password') }}<p class="help">Use 12–128 characters. Passwords are never displayed after saving.</p>
+{% if form.must_change is defined %}<label class="checkbox">{{ form.must_change() }} {{ form.must_change.label.text }}</label>{% else %}<p>The user will be signed out and must change this password at their next login.</p>{% endif %}
+<div class="row-actions">{{ form.submit(class='button') }}<a href="{{ url_for('admin.users') }}">Cancel</a></div></form></section>
+{% endblock %}

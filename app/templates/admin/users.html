@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import pagination %}
+{% block content %}
+<div class="page-heading"><h1>Users</h1><a class="button" href="{{ url_for('admin.create_user') }}">Create user</a></div>
+<div class="table-wrap panel"><table>
+<thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created (UTC)</th><th>Last login (UTC)</th><th>Actions</th></tr></thead>
+<tbody>{% for user in records.items %}<tr>
+<td>{{ user.name }}</td><td>{{ user.email }}</td><td>{{ user.role|replace('_',' ')|title }}</td>
+<td><span class="badge {{ 'active' if user.is_active else 'inactive' }}">{{ 'Active' if user.is_active else 'Disabled' }}</span></td>
+<td>{{ user.created_at.strftime('%Y-%m-%d') }}</td><td>{{ user.last_login_at.strftime('%Y-%m-%d %H:%M') if user.last_login_at else 'Never' }}</td>
+<td><div class="row-actions"><a href="{{ url_for('admin.reset_password', user_id=user.id) }}">Reset password</a>
+{% if user.id != current_user.id %}<form method="post" action="{{ url_for('admin.user_action', user_id=user.id, action='disable' if user.is_active else 'enable') }}" data-confirm="{{ 'Disable' if user.is_active else 'Enable' }} this account?">{{ action_form.hidden_tag() }}<button class="text-button" type="submit">{{ 'Disable' if user.is_active else 'Enable' }}</button></form>{% endif %}</div></td>
+</tr>{% endfor %}</tbody></table></div>{{ pagination(records, 'admin.users') }}
+{% endblock %}

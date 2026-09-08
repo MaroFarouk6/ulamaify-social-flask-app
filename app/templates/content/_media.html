@@ -1,0 +1,24 @@
+{% macro media_card(submission, asset, editable=false, remove_form=None) %}
+<li class="media-card" data-media-id="{{ asset.id }}" {% if editable %}draggable="true"{% endif %}>
+  <span class="media-order" aria-label="Position">{{ asset.sort_order }}</span>
+  {% if asset.mime_type.startswith('image/') %}
+  <img src="{{ url_for('content.media', submission_id=submission.id, media_id=asset.id) }}" alt="Preview of {{ asset.original_filename }}">
+  {% elif asset.mime_type == 'video/mp4' %}
+  <video controls preload="metadata"><source src="{{ url_for('content.media', submission_id=submission.id, media_id=asset.id) }}" type="video/mp4"></video>
+  {% else %}
+  <a class="document-preview" href="{{ url_for('content.media', submission_id=submission.id, media_id=asset.id) }}">PDF document</a>
+  {% endif %}
+  <div class="media-meta"><strong>{{ asset.original_filename }}</strong><span>{{ asset.mime_type }} · {{ (asset.file_size / 1048576)|round(2) }} MB</span></div>
+  {% if editable %}<form method="post" action="{{ url_for('content.remove_media', submission_id=submission.id, media_id=asset.id) }}" data-confirm="Remove this staged file?">{{ remove_form.hidden_tag() }}<button type="submit" class="text-button danger">Remove</button></form>{% endif %}
+</li>
+{% endmacro %}
+
+{% macro media_group(submission, items, scope, title, editable=false, reorder_form=None, remove_form=None) %}
+<section class="media-group">
+  <div class="section-heading"><h3>{{ title }}</h3>{% if editable and items|length > 1 %}<span class="help">Drag items to change carousel order.</span>{% endif %}</div>
+  {% if items %}
+  <ol class="media-list" data-sortable="{{ 'true' if editable else 'false' }}">{% for asset in items %}{{ media_card(submission, asset, editable, remove_form) }}{% endfor %}</ol>
+  {% if editable and items|length > 1 %}<form class="reorder-form" method="post" action="{{ url_for('content.reorder_media', submission_id=submission.id) }}">{{ reorder_form.csrf_token }}<input type="hidden" name="media_scope" value="{{ scope }}"><input class="ordered-ids" type="hidden" name="ordered_ids" value="{{ items|map(attribute='id')|join(',') }}"><button type="submit" class="button secondary">Save media order</button></form>{% endif %}
+  {% else %}<p>No media in this group.</p>{% endif %}
+</section>
+{% endmacro %}

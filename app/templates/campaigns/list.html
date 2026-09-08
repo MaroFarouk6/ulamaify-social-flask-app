@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">{{ 'CAMPAIGN REGISTRY' if admin else 'CONTENT PLANNING' }}</p><h1>{{ 'Campaigns' if admin else 'Active campaigns' }}</h1></div><div class="button-row">{% if admin %}<a class="button" href="{{ url_for('campaigns.create_campaign') }}">Add campaign</a>{% endif %}<a class="button secondary" href="{{ url_for('campaigns.manage_campaigns' if admin else 'campaigns.active_campaigns') }}">Refresh</a></div></div>
+{% if admin %}<p>Campaigns are read from and added to the authoritative Sheet. Deactivation preserves all existing content and Drive folders.</p>{% endif %}
+{% if error %}<div class="notice error" role="alert">{{ error }}</div>{% else %}
+<div class="table-wrap panel"><table><thead><tr><th>Campaign</th>{% if admin %}<th>ID</th>{% endif %}<th>Type</th>{% if admin %}<th>Folder</th>{% endif %}<th>Start date</th><th>End date</th><th>Status</th>{% if admin %}<th>Action</th>{% endif %}</tr></thead><tbody>
+{% for campaign in campaigns %}<tr><td><strong>{{ campaign.campaign_name }}</strong></td>{% if admin %}<td>{{ campaign.campaign_id }}</td>{% endif %}<td>{{ campaign.type }}</td>{% if admin %}<td>{{ campaign.folder_name }}</td>{% endif %}<td>{{ campaign.start_date }}</td><td>{{ campaign.end_date }}</td><td><span class="badge {{ campaign.status|lower }}">{{ campaign.status|title }}</span></td>
+{% if admin %}<td><form method="post" action="{{ url_for('campaigns.campaign_action', campaign_id=campaign.campaign_id, action='deactivate' if campaign.status == 'ACTIVE' else 'activate') }}" data-confirm="{{ 'Deactivate' if campaign.status == 'ACTIVE' else 'Activate' }} this campaign in the registry?">{{ form.csrf_token }}<input type="hidden" name="expected_fingerprint" value="{{ campaign.fingerprint }}"><button class="text-button" type="submit">{{ 'Deactivate' if campaign.status == 'ACTIVE' else 'Activate' }}</button></form></td>{% endif %}</tr>
+{% else %}<tr><td colspan="8">No {{ 'active ' if not admin else '' }}campaigns found.</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+{% endblock %}

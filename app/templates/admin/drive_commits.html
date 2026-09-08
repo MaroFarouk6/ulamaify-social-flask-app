@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import pagination %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">APPROVAL DELIVERY</p><h1>Drive commits</h1></div></div>
+<p>This page shows approved packages only. The application never triggers n8n or a social platform.</p>
+<div class="table-wrap panel"><table><thead><tr><th>Created (UTC)</th><th>Submission</th><th>Platform</th><th>Post folder</th><th>Status</th><th>Message</th><th>Action</th></tr></thead><tbody>
+{% for attempt in records.items %}<tr><td>{{ attempt.created_at.strftime('%Y-%m-%d %H:%M') }}</td><td><a href="{{ url_for('admin.review', submission_id=attempt.variant.submission.id) }}">{{ attempt.variant.submission.campaign_name_snapshot }}</a></td><td>{{ attempt.variant.platform|title }}</td><td>{{ attempt.post_folder_name or 'Not allocated' }}</td><td><span class="badge state-{{ attempt.status|lower }}">{{ attempt.status|title }}</span></td><td>{{ attempt.error_message or '—' }}</td><td>{% if attempt.status in ['FAILED','UNCERTAIN'] and attempt.variant.status == 'DRIVE_ERROR' %}<form method="post" action="{{ url_for('admin.retry_drive_commit', variant_id=attempt.variant.id) }}" data-confirm="Retry this Drive commit? Existing Drive IDs will be reconciled first.">{{ action_form.hidden_tag() }}<button class="text-button" type="submit">Retry</button></form>{% else %}—{% endif %}</td></tr>{% else %}<tr><td colspan="7">No Drive commit attempts.</td></tr>{% endfor %}
+</tbody></table></div>{{ pagination(records, 'admin.drive_commits') }}
+{% endblock %}

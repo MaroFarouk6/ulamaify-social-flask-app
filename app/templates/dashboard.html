@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">WORKSPACE</p><h1>Welcome, {{ current_user.name }}</h1></div></div>
+<div class="stats">
+{% if current_user.role == 'admin' %}
+  {% for key, label in [('PENDING_APPROVAL','Pending approval'),('DRAFT','Drafts'),('CHANGES_REQUESTED','Changes requested'),('APPROVED_TODAY','Approved today'),('DRIVE_ERROR','Drive errors'),('ACTIVE_CAMPAIGNS','Active campaigns')] %}
+  <a class="panel stat-card" href="{{ url_for('admin.pending') if key in ['PENDING_APPROVAL','DRIVE_ERROR'] else url_for('content.index', status=key) if key in ['DRAFT','CHANGES_REQUESTED'] else url_for('content.index') if key == 'APPROVED_TODAY' else url_for('campaigns.manage_campaigns') }}"><span>{{ label }}</span><strong>{{ counts[key] }}</strong></a>
+  {% endfor %}
+{% else %}
+  {% for key, label in [('DRAFT','My drafts'),('PENDING_APPROVAL','Pending approval'),('CHANGES_REQUESTED','Changes requested'),('APPROVED','Approved'),('REJECTED','Rejected')] %}
+  <a class="panel stat-card" href="{{ url_for('content.index', status=key) }}"><span>{{ label }}</span><strong>{{ counts[key] }}</strong></a>
+  {% endfor %}
+{% endif %}
+</div>
+<div class="cards">
+  <a class="panel action-card" href="{{ url_for('content.new') }}"><h2>New content</h2><p>Create a staged draft outside Google Drive.</p><span>Create draft →</span></a>
+  <a class="panel action-card" href="{{ url_for('campaigns.manage_campaigns' if current_user.role == 'admin' else 'campaigns.active_campaigns') }}"><h2>Campaigns</h2><p>Review active campaigns and their dates.</p><span>View campaigns →</span></a>
+  {% if current_user.role == 'admin' %}
+  <a class="panel action-card" href="{{ url_for('admin.pending') }}"><h2>Review queue</h2><p>Approve, reject, or request changes by platform.</p><span>Review content →</span></a>
+  <a class="panel action-card" href="{{ url_for('admin.users') }}"><h2>Team access</h2><p>Create accounts and manage access.</p><span>Manage users →</span></a>
+  <a class="panel action-card" href="{{ url_for('admin.audit') }}"><h2>Activity</h2><p>Review account and campaign actions.</p><span>View audit log →</span></a>
+  {% else %}<a class="panel action-card" href="{{ url_for('auth.change_password') }}"><h2>My account</h2><p>Update your password.</p><span>Manage password →</span></a>{% endif %}
+</div>
+{% if recent %}<section class="panel"><h2>Recent activity</h2><ol class="timeline">{% for event in recent %}<li><strong>{{ event.action|replace('_', ' ')|title }}</strong><span>{{ event.actor_name or 'System' }} · {{ event.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span></li>{% endfor %}</ol></section>{% endif %}
+{% endblock %}

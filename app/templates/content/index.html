@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import pagination %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">CONTENT WORKSPACE</p><h1>{{ 'All content' if current_user.role == 'admin' else 'My content' }}</h1></div><a class="button" href="{{ url_for('content.new') }}">New content</a></div>
+<nav class="status-filter" aria-label="Filter content"><a class="{{ 'selected' if not status }}" href="{{ url_for('content.index') }}">All</a>{% for value in ['DRAFT','PENDING_APPROVAL','CHANGES_REQUESTED','APPROVING','APPROVED','DRIVE_ERROR','REJECTED'] %}<a class="{{ 'selected' if status == value }}" href="{{ url_for('content.index', status=value) }}">{{ value|replace('_',' ')|title }}</a>{% endfor %}</nav>
+<div class="table-wrap panel"><table><thead><tr>{% if current_user.role == 'admin' %}<th>Creator</th>{% endif %}<th>Campaign</th><th>Date</th><th>Platforms</th><th>Types</th><th>Status</th><th>Updated (UTC)</th><th>Action</th></tr></thead><tbody>
+{% for submission in records.items %}<tr>{% if current_user.role == 'admin' %}<td>{{ submission.creator.name }}</td>{% endif %}<td>{{ submission.campaign_name_snapshot }}</td><td>{{ submission.target_date }}</td><td>{% for variant in submission.platforms %}<span class="compact-label">{{ variant.platform|title }}</span>{% endfor %}</td><td>{% for variant in submission.platforms %}{{ variant.selected_post_type or 'Review required' }}{% if not loop.last %}, {% endif %}{% endfor %}</td><td><span class="badge state-{{ submission.status|lower }}">{{ submission.status|replace('_',' ')|title }}</span></td><td>{{ submission.updated_at.strftime('%Y-%m-%d %H:%M') }}</td><td><a href="{{ url_for('content.detail', submission_id=submission.id) }}">Review</a></td></tr>
+{% else %}<tr><td colspan="8">No content found.</td></tr>{% endfor %}
+</tbody></table></div>{{ pagination(records, 'content.index', status) }}
+{% endblock %}

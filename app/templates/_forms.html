@@ -1,0 +1,14 @@
+{% macro field(input, autocomplete=None) %}
+<div class="field">
+  {{ input.label }}
+  {% if autocomplete %}{{ input(autocomplete=autocomplete, aria_describedby=input.id ~ '-errors') }}{% else %}{{ input(aria_describedby=input.id ~ '-errors') }}{% endif %}
+  <div id="{{ input.id }}-errors">{% for error in input.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+</div>
+{% endmacro %}
+{% macro pagination(records, endpoint, action=None) %}
+{% if records.pages > 1 %}<nav class="pagination" aria-label="Pages">
+  {% if records.has_prev %}<a href="{{ url_for(endpoint, page=records.prev_num, action=action) }}">Previous</a>{% endif %}
+  <span>Page {{ records.page }} of {{ records.pages }}</span>
+  {% if records.has_next %}<a href="{{ url_for(endpoint, page=records.next_num, action=action) }}">Next</a>{% endif %}
+</nav>{% endif %}
+{% endmacro %}

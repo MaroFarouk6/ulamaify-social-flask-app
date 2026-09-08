@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import pagination %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">REVIEW QUEUE</p><h1>Pending approval</h1></div></div>
+<div class="table-wrap panel"><table><thead><tr><th>Creator</th><th>Campaign</th><th>Date</th><th>Platforms</th><th>Media</th><th>Submitted (UTC)</th><th>Status</th><th>Action</th></tr></thead><tbody>
+{% for submission in records.items %}<tr><td>{{ submission.creator.name }}</td><td>{{ submission.campaign_name_snapshot }}</td><td>{{ submission.target_date }}</td><td>{{ submission.platforms|map(attribute='platform')|join(', ')|title }}</td><td>{{ submission.media_assets|length }}</td><td>{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') if submission.submitted_at else 'Admin draft' }}</td><td><span class="badge state-{{ submission.status|lower }}">{{ submission.status|replace('_',' ')|title }}</span></td><td><a href="{{ url_for('admin.review', submission_id=submission.id) }}">Review</a></td></tr>{% else %}<tr><td colspan="8">No submissions are waiting.</td></tr>{% endfor %}
+</tbody></table></div>{{ pagination(records, 'admin.pending') }}
+{% endblock %}

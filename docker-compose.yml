@@ -1,0 +1,135 @@
+name: ulamaify-social-manager
+
+x-app-environment: &app-environment
+  APP_ENV: production
+  SECRET_KEY_FILE: /run/secrets/secret_key
+  DATABASE_URL_FILE: /run/secrets/database_url
+  GOOGLE_AUTH_MODE: oauth
+  GOOGLE_AUTHORIZED_USER_FILE: /run/social-secrets/google_authorized_user.json
+  CAMPAIGN_REGISTRY_SHEET_ID: ${CAMPAIGN_REGISTRY_SHEET_ID:-}
+  CAMPAIGN_REGISTRY_RANGE: ${CAMPAIGN_REGISTRY_RANGE:-'sheet1'!A:G}
+  SOCIAL_ROOT_FOLDER_ID: ${SOCIAL_ROOT_FOLDER_ID:-}
+  CAMPAIGNS_ROOT_FOLDER_ID: ${CAMPAIGNS_ROOT_FOLDER_ID:-}
+  ENABLE_DRIVE_FACEBOOK_CAROUSEL: ${ENABLE_DRIVE_FACEBOOK_CAROUSEL:-false}
+  PROXY_HOPS: ${PROXY_HOPS:-0}
+  TRUSTED_HOSTS: social.ulamaify.org,localhost,127.0.0.1
+  MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-500}
+  STAGING_PATH: /app/data/staging
+  SESSION_HOURS: ${SESSION_HOURS:-12}
+
+services:
+  postgres:
+    image: postgres:18-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: social_manager
+      POSTGRES_USER: social_owner
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_owner_password
+    secrets: [db_owner_password, db_app_password]
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./scripts/10-init-roles.sh:/docker-entrypoint-initdb.d/10-init-roles.sh:ro
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U social_owner -d social_manager"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: production
+    image: ulamaify-social-manager:phase-6
+    profiles: [tools]
+    command: ["flask", "--app", "app:create_app", "db", "upgrade"]
+    environment:
+      <<: *app-environment
+      DATABASE_URL_FILE: /run/secrets/migration_database_url
+    secrets: [secret_key, migration_database_url]
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  social-manager:
+    build:
+      context: .
+      target: production
+    image: ulamaify-social-manager:phase-6
+    restart: unless-stopped
+    environment: *app-environment
+    secrets: [secret_key, database_url]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-proxy}"
+      - 'traefik.http.routers.social-manager.rule=Host(`${SOCIAL_HOST:-social.ulamaify.org}`)'
+      - "traefik.http.routers.social-manager.entrypoints=${TRAEFIK_HTTPS_ENTRYPOINT:-https}"
+      - "traefik.http.routers.social-manager.tls=true"
+      - "traefik.http.routers.social-manager.middlewares=security-headers@file"
+      - "traefik.http.routers.social-manager.service=social-manager-service"
+      - "traefik.http.services.social-manager-service.loadbalancer.server.port=8000"
+      - 'traefik.http.routers.social-manager-http.rule=Host(`${SOCIAL_HOST:-social.ulamaify.org}`)'
+      - "traefik.http.routers.social-manager-http.entrypoints=${TRAEFIK_HTTP_ENTRYPOINT:-http}"
+      - "traefik.http.routers.social-manager-http.middlewares=https-redirect@file"
+      - "traefik.http.routers.social-manager-http.service=social-manager-service"
+    volumes:
+      - staging_data:/app/data/staging
+      - ./google-secrets:/run/social-secrets:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [backend, outbound, proxy]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  drive-worker:
+    image: ulamaify-social-manager:phase-6
+    restart: unless-stopped
+    command: ["flask", "--app", "app:create_app", "run-drive-worker"]
+    environment: *app-environment
+    secrets: [secret_key, database_url]
+    volumes:
+      - staging_data:/app/data/staging:ro
+      - ./google-secrets:/run/social-secrets:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=1g,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [backend, outbound]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  staging_data:
+
+networks:
+  backend:
+    internal: true
+  outbound:
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:-proxy}
+
+secrets:
+  secret_key:
+    file: ./secrets/secret_key
+  database_url:
+    file: ./secrets/database_url
+  migration_database_url:
+    file: ./secrets/migration_database_url
+  db_owner_password:
+    file: ./secrets/db_owner_password
+  db_app_password:
+    file: ./secrets/db_app_password

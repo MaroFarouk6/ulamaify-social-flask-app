@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import field %}
+{% block content %}
+<section class="panel auth-panel">
+  <p class="eyebrow">CONTENT WORKSPACE</p><h1>Log in</h1>
+  <p>Use the account created by your administrator.</p>
+  {% if error %}<div class="notice error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post">{{ form.hidden_tag() }}{{ field(form.email, 'username') }}{{ field(form.password, 'current-password') }}{{ form.submit(class='button') }}</form>
+</section>
+{% endblock %}

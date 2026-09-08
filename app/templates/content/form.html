@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import field %}
+{% from 'content/_media.html' import media_group %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">{{ 'NEW CONTENT' if not submission else 'EDIT DRAFT' }}</p><h1>{{ 'Create content' if not submission else submission.campaign_name_snapshot }}</h1></div>{% if submission %}<a href="{{ url_for('content.detail', submission_id=submission.id) }}">View summary</a>{% endif %}</div>
+{% if error %}<div class="notice error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" class="panel content-form">
+{{ form.hidden_tag() }}
+<div class="form-grid">{{ field(form.campaign_id) }}{{ field(form.target_date) }}</div>
+<fieldset><legend>Platforms</legend><div class="platform-choices">
+{% set selected_names = request.form.getlist('platforms') if request.method == 'POST' else (submission.platforms|map(attribute='platform')|list if submission else []) %}
+{% for key, capability in platforms.items() %}<label class="platform-choice"><input type="checkbox" name="platforms" value="{{ key }}" {% if key in selected_names %}checked{% endif %}><span><strong>{{ capability.label }}</strong><small>{{ capability.accepted_types|sort|join(', ') }}</small></span></label>{% endfor %}
+</div></fieldset>
+{{ field(form.default_caption) }}
+<label class="checkbox"><input id="customize-captions" type="checkbox" name="customize_captions" value="yes" {% if request.form.get('customize_captions') == 'yes' or (submission and submission.platforms|selectattr('caption_override','ne',none)|list) %}checked{% endif %}> Customize captions per platform</label>
+<div id="variant-options" class="variant-options">
+{% for key, capability in platforms.items() %}{% set variant = (submission.platforms|selectattr('platform','equalto',key)|first) if submission else none %}
+<section class="variant-option" data-platform-panel="{{ key }}"><h3>{{ capability.label }}</h3>
+{% if capability.story_media %}<label>Placement<select name="placement_{{ key }}"><option value="standard">Standard</option><option value="story" {% if variant and variant.placement == 'story' %}selected{% endif %}>Story</option></select></label>{% endif %}
+<label class="caption-override">Caption override<textarea name="caption_{{ key }}" maxlength="10000" rows="4">{{ request.form.get('caption_' ~ key, variant.caption_override if variant and variant.caption_override else '') }}</textarea></label>
+</section>{% endfor %}</div>
+<div class="row-actions">{{ form.submit(class='button') }}{% if submission %}<a href="{{ url_for('content.detail', submission_id=submission.id) }}">Cancel</a>{% endif %}</div>
+</form>
+{% if submission %}
+<section class="panel"><div class="section-heading"><div><p class="eyebrow">STAGING STORAGE</p><h2>Media</h2></div></div>
+<form method="post" enctype="multipart/form-data" action="{{ url_for('content.upload', submission_id=submission.id) }}">{{ upload_form.hidden_tag() }}<div class="upload-grid">{{ field(upload_form.files) }}{{ field(upload_form.media_scope) }}</div>{{ upload_form.submit(class='button') }}</form>
+<p class="help">Files remain in application staging storage. Uploading or submitting does not write anything to Google Drive.</p></section>
+{% set shared = submission.media_assets|selectattr('submission_platform_id','equalto',none)|list %}
+{{ media_group(submission, shared, 'shared', 'Shared media', true, reorder_form, logout_form) }}
+{% for variant in submission.platforms %}{% if variant.media_assets %}{{ media_group(submission, variant.media_assets, variant.platform, platforms[variant.platform].label ~ ' custom media', true, reorder_form, logout_form) }}{% endif %}{% endfor %}
+<section class="panel"><h2>Detected content</h2><div class="variant-summary">{% for variant in submission.platforms %}<article><h3>{{ platforms[variant.platform].label }}</h3><p><strong>{{ variant.selected_post_type|title if variant.selected_post_type else 'Review required' }}</strong></p><p class="{{ 'compatible' if variant.is_compatible else 'incompatible' }}">{{ variant.compatibility_message }}</p></article>{% endfor %}</div></section>
+{% endif %}
+{% endblock %}
