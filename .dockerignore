@@ -1,0 +1,14 @@
+*
+!app/
+!app/**
+!migrations/
+!migrations/**
+!scripts/
+!scripts/**
+!tests/
+!tests/**
+!requirements*.lock
+!pyproject.toml
+!gunicorn.conf.py
+**/__pycache__/
+**/*.pyc
